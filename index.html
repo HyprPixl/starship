@@ -38,8 +38,13 @@
                         </div>
                         <div class="stat-row">
                             <span class="stat-icon">⬆️</span>
-                            <span class="stat-label">Height:</span> 
+                            <span class="stat-label">Altitude:</span> 
                             <span id="current-height" class="stat-value">0</span>m
+                        </div>
+                        <div class="stat-row stat-secondary">
+                            <span class="stat-icon">🏔️</span>
+                            <span class="stat-label-small">Max:</span> 
+                            <span id="max-height" class="stat-value-small">0</span>m
                         </div>
                         <div class="stat-row">
                             <span class="stat-icon">⚡</span>
@@ -64,14 +69,18 @@
             </div>
 
             <div id="controls">
-                <button id="launch-btn" class="btn btn-primary">LAUNCH</button>
-                <button id="shop-btn" class="btn btn-secondary">UPGRADES</button>
-                <button id="reset-btn" class="btn btn-danger">RESET GAME</button>
+                <button id="launch-btn" class="btn btn-primary btn-large">🚀 LAUNCH</button>
             </div>
 
-            <div id="shop" class="hidden">
+            <div id="post-flight-panel" class="hidden">
+                <div class="panel-header">
+                    <h2>🎯 Flight Complete!</h2>
+                    <div id="flight-summary"></div>
+                </div>
+            </div>
+
+            <div id="shop">
                 <h2>🛒 Upgrade Shop</h2>
-                <button id="close-shop" class="btn btn-secondary">Close</button>
                 
                 <div class="upgrade-categories">
                     <div class="upgrade-category">
@@ -221,6 +230,11 @@
                         <li>Visual upgrades: Engines grow, wings expand, nose becomes sleek</li>
                     </ul>
                 </div>
+            </div>
+
+            <div id="game-footer">
+                <button id="reset-btn" class="btn btn-danger btn-small">🔄 RESET GAME</button>
+                <p class="footer-text">All progress will be lost if you reset!</p>
             </div>
         </main>
     </div>
