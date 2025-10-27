@@ -179,6 +179,64 @@ main {
     z-index: 1;
 }
 
+.speed-indicator {
+    flex: 1;
+    height: 6px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 3px;
+    margin-left: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(100, 181, 246, 0.3);
+}
+
+.speed-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #44ff44 0%, #ffff44 50%, #ff4444 100%);
+    transition: width 0.2s ease;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+}
+
+.achievement-notification {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    border: 3px solid #ffd700;
+    border-radius: 15px;
+    padding: 20px 30px;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #ffd700;
+    text-align: center;
+    z-index: 100;
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+    animation: achievement-popup 2s ease-out forwards;
+}
+
+@keyframes achievement-popup {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+    }
+    10% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+    20% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+    80% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+}
+
 #game-messages {
     margin-top: 10px;
     color: #ffd700;

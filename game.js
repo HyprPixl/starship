@@ -186,7 +186,7 @@ class Planet {
 
 // Particle System for Thrust Effects
 class Particle {
-    constructor(x, y, vx, vy, life, size, color) {
+    constructor(x, y, vx, vy, life, size, color, type = 'thrust') {
         this.x = x;
         this.y = y;
         this.vx = vx;
@@ -196,13 +196,25 @@ class Particle {
         this.size = size;
         this.color = color;
         this.alpha = 1;
+        this.type = type;
     }
 
     update() {
         this.x += this.vx;
         this.y += this.vy;
-        this.vy += 0.1; // Gravity on particles
-        this.vx *= 0.98; // Air resistance
+        
+        if (this.type === 'thrust') {
+            this.vy += 0.1; // Gravity on particles
+            this.vx *= 0.98; // Air resistance
+        } else if (this.type === 'trail') {
+            this.vx *= 0.95; // Trail particles slow down faster
+            this.vy *= 0.95;
+        } else if (this.type === 'smoke') {
+            this.vy -= 0.05; // Smoke rises
+            this.vx *= 0.97;
+            this.size += 0.1; // Smoke expands
+        }
+        
         this.life--;
         this.alpha = this.life / this.maxLife;
         return this.life > 0;
@@ -296,14 +308,47 @@ class Rocket {
                 vy + this.vy * 0.5,
                 20 + Math.random() * 15,
                 3 + Math.random() * 4,
-                color
+                color,
+                'thrust'
             );
             this.particles.push(particle);
         }
         
+        // Add occasional trail particles for exhaust trail
+        if (Math.random() < 0.3) {
+            const trailParticle = new Particle(
+                this.x,
+                this.y,
+                this.vx * 0.2 + (Math.random() - 0.5) * 0.5,
+                this.vy * 0.2 + (Math.random() - 0.5) * 0.5,
+                40 + Math.random() * 20,
+                2 + Math.random() * 2,
+                'rgba(200, 200, 200, 0.6)',
+                'trail'
+            );
+            this.particles.push(trailParticle);
+        }
+        
         // Limit particle count for performance
-        if (this.particles.length > 200) {
+        if (this.particles.length > 300) {
             this.particles.splice(0, 50);
+        }
+    }
+    
+    createLandingSmoke() {
+        // Create smoke particles when landing
+        for (let i = 0; i < 10; i++) {
+            const smokeParticle = new Particle(
+                this.x + (Math.random() - 0.5) * 20,
+                this.y,
+                (Math.random() - 0.5) * 2,
+                -Math.random() * 0.5,
+                30 + Math.random() * 20,
+                5 + Math.random() * 5,
+                'rgba(100, 100, 100, 0.5)',
+                'smoke'
+            );
+            this.particles.push(smokeParticle);
         }
     }
 
@@ -380,6 +425,9 @@ class Rocket {
         // Check if landed
         if (this.y >= 580) {
             this.y = 580;
+            if (this.isFlying) {
+                this.createLandingSmoke();
+            }
             this.isFlying = false;
         }
 
@@ -583,6 +631,7 @@ class Game {
         this.cameraY = 0;
         this.isPlaying = false;
         this.thrustActive = false;
+        this.achievementsShown = new Set();
         
         this.setupEventListeners();
         this.generatePlanets();
@@ -661,6 +710,7 @@ class Game {
         this.thrustActive = false;
         this.cameraX = 0;
         this.cameraY = 0;
+        this.achievementsShown.clear(); // Reset achievements for this flight
         
         document.getElementById('flight-stats').classList.remove('hidden');
         document.getElementById('launch-btn').disabled = true;
@@ -750,9 +800,17 @@ class Game {
     }
 
     updateFlightStats() {
-        document.getElementById('current-distance').textContent = Math.floor(this.rocket.distance);
-        document.getElementById('current-height').textContent = Math.floor(this.rocket.maxHeight);
-        document.getElementById('current-speed').textContent = Math.floor(Math.sqrt(this.rocket.vx * this.rocket.vx + this.rocket.vy * this.rocket.vy));
+        const distance = Math.floor(this.rocket.distance);
+        const height = Math.floor(this.rocket.maxHeight);
+        const speed = Math.floor(Math.sqrt(this.rocket.vx * this.rocket.vx + this.rocket.vy * this.rocket.vy));
+        
+        document.getElementById('current-distance').textContent = distance;
+        document.getElementById('current-height').textContent = height;
+        document.getElementById('current-speed').textContent = speed;
+        
+        // Update speed bar (max speed for display: 50 m/s)
+        const speedPercent = Math.min((speed / 50) * 100, 100);
+        document.getElementById('speed-bar').style.width = speedPercent + '%';
         
         const fuelPercent = Math.floor((this.rocket.fuel / this.rocket.maxFuel) * 100);
         document.getElementById('current-fuel').textContent = fuelPercent + '%';
@@ -767,6 +825,38 @@ class Game {
         } else {
             fuelBar.classList.remove('low');
         }
+        
+        // Check for achievements
+        this.checkAchievements(distance, height, speed);
+    }
+    
+    checkAchievements(distance, height, speed) {
+        const achievements = [
+            { id: 'speed_25', condition: speed >= 25, message: '🚀 Speed Demon! 25 m/s!' },
+            { id: 'speed_40', condition: speed >= 40, message: '⚡ Supersonic! 40 m/s!' },
+            { id: 'height_200', condition: height >= 200, message: '⬆️ High Flyer! 200m altitude!' },
+            { id: 'height_500', condition: height >= 500, message: '🌟 Sky High! 500m altitude!' },
+            { id: 'distance_500', condition: distance >= 500, message: '📏 Long Journey! 500m traveled!' },
+            { id: 'distance_1000', condition: distance >= 1000, message: '🏆 Epic Voyage! 1000m traveled!' }
+        ];
+        
+        achievements.forEach(achievement => {
+            if (achievement.condition && !this.achievementsShown.has(achievement.id)) {
+                this.showAchievement(achievement.message);
+                this.achievementsShown.add(achievement.id);
+            }
+        });
+    }
+    
+    showAchievement(message) {
+        const notification = document.getElementById('achievement-notification');
+        notification.textContent = message;
+        notification.classList.remove('hidden');
+        
+        // Hide after animation completes
+        setTimeout(() => {
+            notification.classList.add('hidden');
+        }, 2000);
     }
 
     resetGame() {
@@ -783,19 +873,32 @@ class Game {
     render() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // Draw enhanced background gradient
+        // Calculate altitude factor for background changes
+        const altitude = this.isPlaying ? (600 - this.rocket.y) : 0;
+        const spaceBlend = Math.min(altitude / 1000, 1); // Transition to space at 1000m
+        
+        // Draw enhanced background gradient that changes with altitude
         const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-        gradient.addColorStop(0, '#000814');
-        gradient.addColorStop(0.3, '#1a1a3e');
-        gradient.addColorStop(0.7, '#264653');
-        gradient.addColorStop(1, '#2a4a5a');
+        
+        // Interpolate colors based on altitude
+        const color1 = this.interpolateColor('#000814', '#000000', spaceBlend);
+        const color2 = this.interpolateColor('#1a1a3e', '#0a0a1a', spaceBlend);
+        const color3 = this.interpolateColor('#264653', '#1a2030', spaceBlend);
+        const color4 = this.interpolateColor('#2a4a5a', '#202040', spaceBlend);
+        
+        gradient.addColorStop(0, color1);
+        gradient.addColorStop(0.3, color2);
+        gradient.addColorStop(0.7, color3);
+        gradient.addColorStop(1, color4);
         this.ctx.fillStyle = gradient;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // Draw multiple layers of stars with parallax
+        // Draw multiple layers of stars with parallax (more stars in space)
+        const starDensityMultiplier = 1 + spaceBlend * 2;
+        
         // Distant stars (slow parallax)
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 100 * starDensityMultiplier; i++) {
             const x = (i * 237 + this.cameraX * 0.05) % this.canvas.width;
             const y = (i * 139 + this.cameraY * 0.05) % this.canvas.height;
             this.ctx.fillRect(x, y, 1, 1);
@@ -803,7 +906,7 @@ class Game {
         
         // Medium stars
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-        for (let i = 0; i < 60; i++) {
+        for (let i = 0; i < 60 * starDensityMultiplier; i++) {
             const x = (i * 331 + this.cameraX * 0.15) % this.canvas.width;
             const y = (i * 197 + this.cameraY * 0.15) % this.canvas.height;
             const twinkle = Math.sin(Date.now() * 0.001 + i) * 0.5 + 0.5;
@@ -814,35 +917,45 @@ class Game {
         
         // Close stars (fast parallax)
         this.ctx.fillStyle = 'white';
-        for (let i = 0; i < 40; i++) {
+        for (let i = 0; i < 40 * starDensityMultiplier; i++) {
             const x = (i * 419 + this.cameraX * 0.3) % this.canvas.width;
             const y = (i * 283 + this.cameraY * 0.3) % this.canvas.height;
             const size = 1 + (i % 3);
             this.ctx.fillRect(x, y, size, size);
         }
         
-        // Draw ground with texture
+        // Draw ground with texture (fades at high altitude)
         const groundY = 580 - this.cameraY;
         
-        // Ground gradient
-        const groundGradient = this.ctx.createLinearGradient(0, groundY, 0, this.canvas.height);
-        groundGradient.addColorStop(0, '#3d6b2e');
-        groundGradient.addColorStop(0.3, '#2d5016');
-        groundGradient.addColorStop(1, '#1a3010');
-        this.ctx.fillStyle = groundGradient;
-        this.ctx.fillRect(0, groundY, this.canvas.width, this.canvas.height - groundY);
-        
-        // Ground texture/details
-        this.ctx.fillStyle = 'rgba(50, 80, 30, 0.5)';
-        for (let i = 0; i < 50; i++) {
-            const x = (i * 157 - this.cameraX * 0.5) % this.canvas.width;
-            if (x < 0) continue;
-            this.ctx.fillRect(x, groundY + 5 + (i % 10), 3 + (i % 3), 2);
+        if (groundY < this.canvas.height + 100) {
+            const groundAlpha = Math.max(0, 1 - spaceBlend * 0.5);
+            this.ctx.globalAlpha = groundAlpha;
+            
+            // Ground gradient
+            const groundGradient = this.ctx.createLinearGradient(0, groundY, 0, this.canvas.height);
+            groundGradient.addColorStop(0, '#3d6b2e');
+            groundGradient.addColorStop(0.3, '#2d5016');
+            groundGradient.addColorStop(1, '#1a3010');
+            this.ctx.fillStyle = groundGradient;
+            this.ctx.fillRect(0, groundY, this.canvas.width, this.canvas.height - groundY);
+            
+            // Ground texture/details
+            this.ctx.fillStyle = 'rgba(50, 80, 30, 0.5)';
+            for (let i = 0; i < 50; i++) {
+                const x = (i * 157 - this.cameraX * 0.5) % this.canvas.width;
+                if (x < 0) continue;
+                this.ctx.fillRect(x, groundY + 5 + (i % 10), 3 + (i % 3), 2);
+            }
+            
+            this.ctx.globalAlpha = 1;
         }
         
-        // Draw enhanced launch pad
+        // Draw enhanced launch pad (only if visible)
         const padX = 100 - this.cameraX;
-        if (padX > -100 && padX < this.canvas.width + 100) {
+        if (padX > -100 && padX < this.canvas.width + 100 && groundY < this.canvas.height + 100) {
+            const padAlpha = Math.max(0, 1 - spaceBlend * 0.5);
+            this.ctx.globalAlpha = padAlpha;
+            
             // Platform shadow
             this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
             this.ctx.fillRect(padX - 45, groundY - 18, 90, 20);
@@ -894,6 +1007,8 @@ class Game {
             this.ctx.beginPath();
             this.ctx.arc(padX + 30, groundY - 15, 3, 0, Math.PI * 2);
             this.ctx.fill();
+            
+            this.ctx.globalAlpha = 1;
         }
         
         // Draw planets
@@ -905,6 +1020,26 @@ class Game {
         this.rocket.draw(this.ctx, this.cameraX, this.cameraY, this.thrustActive);
         
         requestAnimationFrame(() => this.render());
+    }
+    
+    interpolateColor(color1, color2, factor) {
+        // Simple hex color interpolation
+        const c1 = parseInt(color1.slice(1), 16);
+        const c2 = parseInt(color2.slice(1), 16);
+        
+        const r1 = (c1 >> 16) & 0xff;
+        const g1 = (c1 >> 8) & 0xff;
+        const b1 = c1 & 0xff;
+        
+        const r2 = (c2 >> 16) & 0xff;
+        const g2 = (c2 >> 8) & 0xff;
+        const b2 = c2 & 0xff;
+        
+        const r = Math.round(r1 + (r2 - r1) * factor);
+        const g = Math.round(g1 + (g2 - g1) * factor);
+        const b = Math.round(b1 + (b2 - b1) * factor);
+        
+        return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
     }
 }
 
