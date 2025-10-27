@@ -582,7 +582,7 @@ class Rocket {
         ctx.closePath();
         ctx.fill();
         
-        // Draw fins/wings - larger with wing upgrades
+        // Draw fins/wings - larger with wing upgrades, positioned at the back near engine
         const finSize = 7 + wingLevel * 1.5;
         const finLength = 10 + wingLevel * 2;
         
@@ -593,21 +593,21 @@ class Rocket {
         
         ctx.fillStyle = wingGradient;
         
-        // Top fin
+        // Top fin - moved closer to engine (more negative X)
         ctx.beginPath();
-        ctx.moveTo(-10, -bodyHeight/2);
-        ctx.lineTo(-10, -bodyHeight/2 - finSize);
-        ctx.lineTo(-10 - finLength, -bodyHeight/2 - finSize * 0.3);
-        ctx.lineTo(-5, -bodyHeight/2);
+        ctx.moveTo(-12, -bodyHeight/2);
+        ctx.lineTo(-8, -bodyHeight/2 - finSize);
+        ctx.lineTo(-12 - finLength, -bodyHeight/2 - finSize * 0.5);
+        ctx.lineTo(-14, -bodyHeight/2);
         ctx.closePath();
         ctx.fill();
         
-        // Bottom fin
+        // Bottom fin - moved closer to engine (more negative X)
         ctx.beginPath();
-        ctx.moveTo(-10, bodyHeight/2);
-        ctx.lineTo(-10, bodyHeight/2 + finSize);
-        ctx.lineTo(-10 - finLength, bodyHeight/2 + finSize * 0.3);
-        ctx.lineTo(-5, bodyHeight/2);
+        ctx.moveTo(-12, bodyHeight/2);
+        ctx.lineTo(-8, bodyHeight/2 + finSize);
+        ctx.lineTo(-12 - finLength, bodyHeight/2 + finSize * 0.5);
+        ctx.lineTo(-14, bodyHeight/2);
         ctx.closePath();
         ctx.fill();
         
@@ -615,15 +615,15 @@ class Rocket {
         ctx.strokeStyle = '#3333aa';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(-10, -bodyHeight/2);
-        ctx.lineTo(-10, -bodyHeight/2 - finSize);
-        ctx.lineTo(-10 - finLength, -bodyHeight/2 - finSize * 0.3);
+        ctx.moveTo(-12, -bodyHeight/2);
+        ctx.lineTo(-8, -bodyHeight/2 - finSize);
+        ctx.lineTo(-12 - finLength, -bodyHeight/2 - finSize * 0.5);
         ctx.stroke();
         
         ctx.beginPath();
-        ctx.moveTo(-10, bodyHeight/2);
-        ctx.lineTo(-10, bodyHeight/2 + finSize);
-        ctx.lineTo(-10 - finLength, bodyHeight/2 + finSize * 0.3);
+        ctx.moveTo(-12, bodyHeight/2);
+        ctx.lineTo(-8, bodyHeight/2 + finSize);
+        ctx.lineTo(-12 - finLength, bodyHeight/2 + finSize * 0.5);
         ctx.stroke();
         
         // Window/cockpit
