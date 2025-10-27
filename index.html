@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starship - Escape to Space</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <header>
+            <h1>🚀 STARSHIP</h1>
+            <div id="stats">
+                <div class="stat">
+                    <span class="label">Money:</span>
+                    <span id="money">$0</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Best Distance:</span>
+                    <span id="best-distance">0m</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Best Height:</span>
+                    <span id="best-height">0m</span>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div id="game-screen">
+                <canvas id="game-canvas" width="800" height="600"></canvas>
+                <div id="game-info">
+                    <div id="flight-stats" class="hidden">
+                        <div>Distance: <span id="current-distance">0</span>m</div>
+                        <div>Height: <span id="current-height">0</span>m</div>
+                        <div>Speed: <span id="current-speed">0</span>m/s</div>
+                        <div>Fuel: <span id="current-fuel">100</span>%</div>
+                    </div>
+                    <div id="game-messages"></div>
+                </div>
+            </div>
+
+            <div id="controls">
+                <button id="launch-btn" class="btn btn-primary">LAUNCH</button>
+                <button id="shop-btn" class="btn btn-secondary">UPGRADES</button>
+                <button id="reset-btn" class="btn btn-danger">RESET GAME</button>
+            </div>
+
+            <div id="shop" class="hidden">
+                <h2>🛒 Upgrade Shop</h2>
+                <button id="close-shop" class="btn btn-secondary">Close</button>
+                
+                <div class="upgrade-categories">
+                    <div class="upgrade-category">
+                        <h3>🔥 Engine Power</h3>
+                        <div class="upgrade-item">
+                            <div class="upgrade-info">
+                                <strong>Fuel Capacity</strong>
+                                <p>Increase fuel capacity</p>
+                                <p>Level: <span id="fuel-level">0</span></p>
+                            </div>
+                            <button class="buy-btn" data-upgrade="fuel">
+                                Buy: $<span id="fuel-cost">100</span>
+                            </button>
+                        </div>
+                        <div class="upgrade-item">
+                            <div class="upgrade-info">
+                                <strong>Thrust Power</strong>
+                                <p>Increase engine thrust</p>
+                                <p>Level: <span id="thrust-level">0</span></p>
+                            </div>
+                            <button class="buy-btn" data-upgrade="thrust">
+                                Buy: $<span id="thrust-cost">150</span>
+                            </button>
+                        </div>
+                        <div class="upgrade-item">
+                            <div class="upgrade-info">
+                                <strong>Fuel Efficiency</strong>
+                                <p>Burn fuel more slowly</p>
+                                <p>Level: <span id="efficiency-level">0</span></p>
+                            </div>
+                            <button class="buy-btn" data-upgrade="efficiency">
+                                Buy: $<span id="efficiency-cost">200</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="upgrade-category">
+                        <h3>✈️ Aerodynamics</h3>
+                        <div class="upgrade-item">
+                            <div class="upgrade-info">
+                                <strong>Wing Design</strong>
+                                <p>Improve glide efficiency</p>
+                                <p>Level: <span id="wings-level">0</span></p>
+                            </div>
+                            <button class="buy-btn" data-upgrade="wings">
+                                Buy: $<span id="wings-cost">175</span>
+                            </button>
+                        </div>
+                        <div class="upgrade-item">
+                            <div class="upgrade-info">
+                                <strong>Nose Cone</strong>
+                                <p>Reduce air resistance</p>
+                                <p>Level: <span id="nosecone-level">0</span></p>
+                            </div>
+                            <button class="buy-btn" data-upgrade="nosecone">
+                                Buy: $<span id="nosecone-cost">250</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="upgrade-category">
+                        <h3>🌟 Special Systems</h3>
+                        <div class="upgrade-item">
+                            <div class="upgrade-info">
+                                <strong>Gravity Detector</strong>
+                                <p>Better detect gravity wells</p>
+                                <p>Level: <span id="detector-level">0</span></p>
+                            </div>
+                            <button class="buy-btn" data-upgrade="detector">
+                                Buy: $<span id="detector-cost">500</span>
+                            </button>
+                        </div>
+                        <div class="upgrade-item">
+                            <div class="upgrade-info">
+                                <strong>Boost Reserves</strong>
+                                <p>Extra fuel for gravity assists</p>
+                                <p>Level: <span id="boost-level">0</span></p>
+                            </div>
+                            <button class="buy-btn" data-upgrade="boost">
+                                Buy: $<span id="boost-cost">600</span>
+                            </button>
+                        </div>
+                        <div class="upgrade-item">
+                            <div class="upgrade-info">
+                                <strong>Lucky Charm</strong>
+                                <p>Earn more money from flights</p>
+                                <p>Level: <span id="luck-level">0</span></p>
+                            </div>
+                            <button class="buy-btn" data-upgrade="luck">
+                                Buy: $<span id="luck-cost">400</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="upgrade-category">
+                        <h3>🎯 Launch Systems</h3>
+                        <div class="upgrade-item">
+                            <div class="upgrade-info">
+                                <strong>Launch Ramp</strong>
+                                <p>Increase initial speed</p>
+                                <p>Level: <span id="ramp-level">0</span></p>
+                            </div>
+                            <button class="buy-btn" data-upgrade="ramp">
+                                Buy: $<span id="ramp-cost">300</span>
+                            </button>
+                        </div>
+                        <div class="upgrade-item">
+                            <div class="upgrade-info">
+                                <strong>Booster Rockets</strong>
+                                <p>Initial speed burst</p>
+                                <p>Level: <span id="booster-level">0</span></p>
+                            </div>
+                            <button class="buy-btn" data-upgrade="booster">
+                                Buy: $<span id="booster-cost">350</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="instructions">
+                <h3>📖 How to Play</h3>
+                <ul>
+                    <li><strong>Launch:</strong> Click LAUNCH to start your flight</li>
+                    <li><strong>Fly:</strong> Hold SPACE or CLICK to fire thrusters (uses fuel)</li>
+                    <li><strong>Gravity Assist:</strong> Fly near planets (glowing orbs) to get speed boosts!</li>
+                    <li><strong>Earn Money:</strong> Travel farther to earn more money</li>
+                    <li><strong>Upgrade:</strong> Use money to improve your rocket</li>
+                    <li><strong>Goal:</strong> Reach space and escape Earth's gravity!</li>
+                </ul>
+            </div>
+        </main>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
