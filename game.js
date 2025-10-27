@@ -257,6 +257,7 @@ class Rocket {
         this.maxFuel = 100 + this.upgradeSystem.getBonus('fuel');
         this.distance = 0;
         this.maxHeight = 0;
+        this.currentHeight = 0;
         this.isFlying = true;
         this.gravityAssists = 0;
         this.particles = [];
@@ -356,6 +357,26 @@ class Rocket {
         if (!this.isFlying) return;
         
         this.launchTime++;
+        
+        // Calculate speed once for reuse
+        const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+        
+        // Create smoke trail when out of fuel and moving
+        if (this.fuel <= 0 && speed > 2 && Math.random() < 0.4) {
+            const smokeX = this.x - Math.cos(this.angle) * 15;
+            const smokeY = this.y - Math.sin(this.angle) * 15;
+            const smokeParticle = new Particle(
+                smokeX + (Math.random() - 0.5) * 8,
+                smokeY + (Math.random() - 0.5) * 8,
+                this.vx * 0.3 + (Math.random() - 0.5) * 0.5,
+                this.vy * 0.3 + (Math.random() - 0.5) * 0.5,
+                30 + Math.random() * 25,
+                3 + Math.random() * 3,
+                'rgba(120, 120, 120, 0.5)',
+                'smoke'
+            );
+            this.particles.push(smokeParticle);
+        }
 
         // Realistic gravity that decreases with altitude
         const altitude = 600 - this.y;
@@ -366,7 +387,6 @@ class Rocket {
         const dragCoef = 0.001 * (1 - this.upgradeSystem.getBonus('nosecone') * 0.01);
         const liftCoef = 0.002 * (1 + this.upgradeSystem.getBonus('wings') * 0.01);
         
-        const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
         const dragX = -this.vx * dragCoef * speed;
         const dragY = -this.vy * dragCoef * speed;
         
@@ -420,7 +440,8 @@ class Rocket {
 
         // Track stats
         this.distance = Math.max(this.distance, this.x);
-        this.maxHeight = Math.max(this.maxHeight, 600 - this.y);
+        this.currentHeight = Math.max(0, 600 - this.y);
+        this.maxHeight = Math.max(this.maxHeight, this.currentHeight);
 
         // Check if landed
         if (this.y >= 580) {
@@ -653,8 +674,6 @@ class Game {
 
     setupEventListeners() {
         document.getElementById('launch-btn').addEventListener('click', () => this.launch());
-        document.getElementById('shop-btn').addEventListener('click', () => this.toggleShop());
-        document.getElementById('close-shop').addEventListener('click', () => this.toggleShop());
         document.getElementById('reset-btn').addEventListener('click', () => this.resetGame());
 
         // Thrust controls
@@ -713,7 +732,9 @@ class Game {
         this.achievementsShown.clear(); // Reset achievements for this flight
         
         document.getElementById('flight-stats').classList.remove('hidden');
-        document.getElementById('launch-btn').disabled = true;
+        document.getElementById('launch-btn').style.display = 'none';
+        document.getElementById('post-flight-panel').classList.add('hidden');
+        document.getElementById('shop').classList.add('hidden');
         document.getElementById('game-messages').textContent = '';
         
         this.gameLoop();
@@ -742,7 +763,7 @@ class Game {
 
     endFlight() {
         this.isPlaying = false;
-        document.getElementById('launch-btn').disabled = false;
+        document.getElementById('launch-btn').style.display = 'block';
         document.getElementById('flight-stats').classList.add('hidden');
         
         const distance = Math.floor(this.rocket.distance);
@@ -767,17 +788,25 @@ class Game {
         this.gameState.saveGame();
         this.updateUI();
         
-        let message = `Flight Complete! Earned $${totalEarnings}`;
+        // Show post-flight panel with upgrades
+        document.getElementById('post-flight-panel').classList.remove('hidden');
+        document.getElementById('shop').classList.remove('hidden');
+        
+        let summary = `<div class="flight-result">
+            <div class="result-item"><span class="result-label">💰 Earned:</span> <span class="result-value">$${totalEarnings}</span></div>
+            <div class="result-item"><span class="result-label">📏 Distance:</span> <span class="result-value">${distance}m</span></div>
+            <div class="result-item"><span class="result-label">⬆️ Max Height:</span> <span class="result-value">${height}m</span></div>`;
+        
         if (assists > 0) {
-            message += ` (${assists} gravity assists!)`;
+            summary += `<div class="result-item"><span class="result-label">🌟 Gravity Assists:</span> <span class="result-value">${assists}</span></div>`;
         }
-        document.getElementById('game-messages').textContent = message;
+        summary += '</div>';
+        
+        document.getElementById('flight-summary').innerHTML = summary;
     }
 
     toggleShop() {
-        const shop = document.getElementById('shop');
-        shop.classList.toggle('hidden');
-        this.updateUI();
+        // No longer needed - shop is always visible after flight
     }
 
     updateUI() {
@@ -801,11 +830,13 @@ class Game {
 
     updateFlightStats() {
         const distance = Math.floor(this.rocket.distance);
-        const height = Math.floor(this.rocket.maxHeight);
+        const currentHeight = Math.floor(this.rocket.currentHeight);
+        const maxHeight = Math.floor(this.rocket.maxHeight);
         const speed = Math.floor(Math.sqrt(this.rocket.vx * this.rocket.vx + this.rocket.vy * this.rocket.vy));
         
         document.getElementById('current-distance').textContent = distance;
-        document.getElementById('current-height').textContent = height;
+        document.getElementById('current-height').textContent = currentHeight;
+        document.getElementById('max-height').textContent = maxHeight;
         document.getElementById('current-speed').textContent = speed;
         
         // Update speed bar (max speed for display: 50 m/s)
@@ -827,36 +858,54 @@ class Game {
         }
         
         // Check for achievements
-        this.checkAchievements(distance, height, speed);
+        this.checkAchievements(distance, maxHeight, speed);
     }
     
     checkAchievements(distance, height, speed) {
         const achievements = [
-            { id: 'speed_25', condition: speed >= 25, message: '🚀 Speed Demon! 25 m/s!' },
-            { id: 'speed_40', condition: speed >= 40, message: '⚡ Supersonic! 40 m/s!' },
-            { id: 'height_200', condition: height >= 200, message: '⬆️ High Flyer! 200m altitude!' },
-            { id: 'height_500', condition: height >= 500, message: '🌟 Sky High! 500m altitude!' },
-            { id: 'distance_500', condition: distance >= 500, message: '📏 Long Journey! 500m traveled!' },
-            { id: 'distance_1000', condition: distance >= 1000, message: '🏆 Epic Voyage! 1000m traveled!' }
+            // Speed achievements with tiers
+            { id: 'speed_demon_1', condition: speed >= 15, message: '🚀 Speed Demon I: 15 m/s!', reward: 50 },
+            { id: 'speed_demon_2', condition: speed >= 25, message: '🚀 Speed Demon II: 25 m/s!', reward: 100 },
+            { id: 'speed_demon_3', condition: speed >= 35, message: '🚀 Speed Demon III: 35 m/s!', reward: 200 },
+            { id: 'speed_demon_4', condition: speed >= 45, message: '⚡ Speed Demon IV: 45 m/s!', reward: 350 },
+            { id: 'supersonic', condition: speed >= 60, message: '💥 SUPERSONIC! 60 m/s!', reward: 500 },
+            
+            // Height achievements with tiers
+            { id: 'sky_climber_1', condition: height >= 100, message: '⬆️ Sky Climber I: 100m!', reward: 50 },
+            { id: 'sky_climber_2', condition: height >= 250, message: '⬆️ Sky Climber II: 250m!', reward: 100 },
+            { id: 'sky_climber_3', condition: height >= 500, message: '🌟 Sky Climber III: 500m!', reward: 200 },
+            { id: 'stratosphere', condition: height >= 800, message: '🌌 Stratosphere: 800m!', reward: 350 },
+            { id: 'space_bound', condition: height >= 1200, message: '🚀 Space Bound: 1200m!', reward: 500 },
+            
+            // Distance achievements with tiers
+            { id: 'explorer_1', condition: distance >= 300, message: '📏 Explorer I: 300m!', reward: 50 },
+            { id: 'explorer_2', condition: distance >= 600, message: '📏 Explorer II: 600m!', reward: 100 },
+            { id: 'explorer_3', condition: distance >= 1000, message: '🏆 Explorer III: 1000m!', reward: 200 },
+            { id: 'voyager', condition: distance >= 1500, message: '🌟 Voyager: 1500m!', reward: 350 },
+            { id: 'galaxy_traveler', condition: distance >= 2500, message: '🌌 Galaxy Traveler: 2500m!', reward: 500 }
         ];
         
         achievements.forEach(achievement => {
             if (achievement.condition && !this.achievementsShown.has(achievement.id)) {
-                this.showAchievement(achievement.message);
+                this.showAchievement(achievement.message, achievement.reward);
                 this.achievementsShown.add(achievement.id);
+                // Award bonus money
+                this.gameState.money += achievement.reward;
+                this.gameState.saveGame();
+                this.updateUI();
             }
         });
     }
     
-    showAchievement(message) {
+    showAchievement(message, reward) {
         const notification = document.getElementById('achievement-notification');
-        notification.textContent = message;
+        notification.innerHTML = `${message}<br><span style="color: #ffeb3b; font-size: 0.8em;">+$${reward} Bonus!</span>`;
         notification.classList.remove('hidden');
         
         // Hide after animation completes
         setTimeout(() => {
             notification.classList.add('hidden');
-        }, 2000);
+        }, 2500);
     }
 
     resetGame() {

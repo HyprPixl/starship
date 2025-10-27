@@ -107,6 +107,12 @@ main {
     font-size: 1.05em;
 }
 
+.stat-row.stat-secondary {
+    margin: 2px 0 8px 33px;
+    font-size: 0.85em;
+    opacity: 0.8;
+}
+
 .stat-icon {
     font-size: 1.2em;
     margin-right: 8px;
@@ -119,10 +125,24 @@ main {
     font-weight: 600;
 }
 
+.stat-label-small {
+    margin-right: 5px;
+    color: #64b5f6;
+    font-weight: 500;
+    font-size: 0.9em;
+}
+
 .stat-value {
     color: #ffd700;
     font-weight: bold;
     font-size: 1.1em;
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+}
+
+.stat-value-small {
+    color: #ffd700;
+    font-weight: bold;
+    font-size: 1em;
     text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
 }
 
@@ -237,6 +257,54 @@ main {
     }
 }
 
+#post-flight-panel {
+    background: rgba(0, 0, 0, 0.6);
+    padding: 25px;
+    border-radius: 15px;
+    border: 2px solid rgba(100, 181, 246, 0.5);
+    backdrop-filter: blur(10px);
+    margin-bottom: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.panel-header h2 {
+    text-align: center;
+    font-size: 2em;
+    margin-bottom: 15px;
+    color: #ffd700;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+}
+
+.flight-result {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.result-item {
+    background: rgba(100, 181, 246, 0.1);
+    padding: 12px 20px;
+    border-radius: 8px;
+    border: 1px solid rgba(100, 181, 246, 0.3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.result-label {
+    color: #64b5f6;
+    font-weight: 600;
+    font-size: 1.1em;
+}
+
+.result-value {
+    color: #ffd700;
+    font-weight: bold;
+    font-size: 1.3em;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+}
+
 #game-messages {
     margin-top: 10px;
     color: #ffd700;
@@ -264,6 +332,16 @@ main {
     transition: all 0.3s ease;
     text-transform: uppercase;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.btn-large {
+    padding: 20px 60px;
+    font-size: 1.5em;
+}
+
+.btn-small {
+    padding: 10px 25px;
+    font-size: 0.9em;
 }
 
 .btn:hover {
@@ -317,9 +395,18 @@ main {
     color: #64b5f6;
 }
 
-#close-shop {
-    display: block;
-    margin: 0 auto 20px;
+#game-footer {
+    text-align: center;
+    padding: 30px 20px;
+    margin-top: 40px;
+    border-top: 2px solid rgba(100, 181, 246, 0.3);
+}
+
+.footer-text {
+    color: #999;
+    font-size: 0.9em;
+    margin-top: 10px;
+    font-style: italic;
 }
 
 .upgrade-categories {
