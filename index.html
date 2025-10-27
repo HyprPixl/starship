@@ -31,10 +31,29 @@
                 <canvas id="game-canvas" width="800" height="600"></canvas>
                 <div id="game-info">
                     <div id="flight-stats" class="hidden">
-                        <div>Distance: <span id="current-distance">0</span>m</div>
-                        <div>Height: <span id="current-height">0</span>m</div>
-                        <div>Speed: <span id="current-speed">0</span>m/s</div>
-                        <div>Fuel: <span id="current-fuel">100</span>%</div>
+                        <div class="stat-row">
+                            <span class="stat-icon">📏</span>
+                            <span class="stat-label">Distance:</span> 
+                            <span id="current-distance" class="stat-value">0</span>m
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-icon">⬆️</span>
+                            <span class="stat-label">Height:</span> 
+                            <span id="current-height" class="stat-value">0</span>m
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-icon">⚡</span>
+                            <span class="stat-label">Speed:</span> 
+                            <span id="current-speed" class="stat-value">0</span>m/s
+                        </div>
+                        <div class="stat-row fuel-stat">
+                            <span class="stat-icon">⛽</span>
+                            <span class="stat-label">Fuel:</span>
+                            <div class="fuel-bar-container">
+                                <div id="fuel-bar" class="fuel-bar"></div>
+                                <span id="current-fuel" class="fuel-text">100%</span>
+                            </div>
+                        </div>
                     </div>
                     <div id="game-messages"></div>
                 </div>
