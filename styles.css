@@ -1,0 +1,360 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #0a0e27 0%, #1a1a3e 50%, #0f0c29 100%);
+    color: #ffffff;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+#game-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+h1 {
+    font-size: 3em;
+    margin-bottom: 15px;
+    text-shadow: 0 0 20px rgba(100, 200, 255, 0.8);
+    background: linear-gradient(45deg, #64b5f6, #fff, #64b5f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+#stats {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap;
+    margin-top: 15px;
+}
+
+.stat {
+    font-size: 1.2em;
+    padding: 10px 20px;
+    background: rgba(100, 181, 246, 0.1);
+    border-radius: 10px;
+    border: 1px solid rgba(100, 181, 246, 0.3);
+}
+
+.stat .label {
+    color: #64b5f6;
+    margin-right: 10px;
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+#game-screen {
+    position: relative;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 15px;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 600px;
+}
+
+#game-canvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    background: linear-gradient(to bottom, #000814 0%, #1a1a3e 50%, #264653 100%);
+}
+
+#game-info {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 15px;
+    border-radius: 10px;
+    border: 2px solid rgba(100, 181, 246, 0.5);
+    font-size: 1.1em;
+}
+
+#flight-stats div {
+    margin: 5px 0;
+    color: #64b5f6;
+}
+
+#game-messages {
+    margin-top: 10px;
+    color: #ffd700;
+    font-weight: bold;
+}
+
+.hidden {
+    display: none !important;
+}
+
+#controls {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 15px 40px;
+    font-size: 1.2em;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #64b5f6 0%, #2196f3 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #e53935 0%, #c62828 100%);
+}
+
+#shop {
+    background: rgba(0, 0, 0, 0.5);
+    padding: 30px;
+    border-radius: 15px;
+    border: 2px solid rgba(100, 181, 246, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+#shop h2 {
+    text-align: center;
+    font-size: 2.5em;
+    margin-bottom: 20px;
+    color: #64b5f6;
+}
+
+#close-shop {
+    display: block;
+    margin: 0 auto 20px;
+}
+
+.upgrade-categories {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.upgrade-category {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.upgrade-category h3 {
+    color: #ffd700;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+    text-align: center;
+}
+
+.upgrade-item {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    border: 1px solid rgba(100, 181, 246, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+}
+
+.upgrade-info {
+    flex: 1;
+}
+
+.upgrade-info strong {
+    color: #64b5f6;
+    display: block;
+    margin-bottom: 5px;
+    font-size: 1.1em;
+}
+
+.upgrade-info p {
+    color: #aaa;
+    font-size: 0.9em;
+    margin: 3px 0;
+}
+
+.buy-btn {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.buy-btn:hover {
+    background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%);
+    transform: scale(1.05);
+}
+
+.buy-btn:disabled {
+    background: #555;
+    cursor: not-allowed;
+    transform: none;
+}
+
+#instructions {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 25px;
+    border-radius: 15px;
+    border: 2px solid rgba(100, 181, 246, 0.3);
+}
+
+#instructions h3 {
+    color: #ffd700;
+    margin-bottom: 15px;
+    font-size: 1.8em;
+}
+
+#instructions ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+#instructions li {
+    margin: 12px 0;
+    padding-left: 30px;
+    position: relative;
+    font-size: 1.1em;
+    line-height: 1.6;
+}
+
+#instructions li::before {
+    content: "→";
+    position: absolute;
+    left: 0;
+    color: #64b5f6;
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+#instructions strong {
+    color: #64b5f6;
+}
+
+@media (max-width: 768px) {
+    h1 {
+        font-size: 2em;
+    }
+
+    #stats {
+        gap: 15px;
+    }
+
+    .stat {
+        font-size: 1em;
+        padding: 8px 15px;
+    }
+
+    .btn {
+        padding: 12px 30px;
+        font-size: 1em;
+    }
+
+    #game-canvas {
+        width: 100%;
+        height: auto;
+    }
+
+    .upgrade-categories {
+        grid-template-columns: 1fr;
+    }
+
+    #game-info {
+        font-size: 0.9em;
+        padding: 10px;
+    }
+}
+
+/* Animations */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.pulse {
+    animation: pulse 1s infinite;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.slide-in {
+    animation: slideIn 0.5s ease-out;
+}
