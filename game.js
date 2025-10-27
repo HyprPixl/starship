@@ -134,29 +134,106 @@ class Planet {
         const screenX = this.x - cameraX;
         const screenY = this.y - cameraY;
         
-        // Draw glow effect
-        const gradient = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, this.radius * 2);
+        // Draw outer glow effect with multiple layers
         const pulse = Math.sin(this.pulsePhase) * 0.2 + 0.8;
-        gradient.addColorStop(0, `rgba(100, 200, 255, ${0.3 * pulse})`);
-        gradient.addColorStop(0.5, `rgba(100, 150, 255, ${0.1 * pulse})`);
-        gradient.addColorStop(1, 'rgba(100, 150, 255, 0)');
         
-        ctx.fillStyle = gradient;
-        ctx.fillRect(screenX - this.radius * 2, screenY - this.radius * 2, 
-                     this.radius * 4, this.radius * 4);
+        // Outer glow
+        const outerGradient = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, this.radius * 3);
+        outerGradient.addColorStop(0, `rgba(100, 200, 255, ${0.15 * pulse})`);
+        outerGradient.addColorStop(0.5, `rgba(80, 160, 255, ${0.08 * pulse})`);
+        outerGradient.addColorStop(1, 'rgba(100, 150, 255, 0)');
+        ctx.fillStyle = outerGradient;
+        ctx.fillRect(screenX - this.radius * 3, screenY - this.radius * 3, 
+                     this.radius * 6, this.radius * 6);
         
-        // Draw planet
-        ctx.fillStyle = '#4488ff';
+        // Inner glow
+        const innerGradient = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, this.radius * 1.5);
+        innerGradient.addColorStop(0, `rgba(150, 220, 255, ${0.4 * pulse})`);
+        innerGradient.addColorStop(0.7, `rgba(100, 180, 255, ${0.2 * pulse})`);
+        innerGradient.addColorStop(1, 'rgba(100, 150, 255, 0)');
+        ctx.fillStyle = innerGradient;
+        ctx.fillRect(screenX - this.radius * 1.5, screenY - this.radius * 1.5, 
+                     this.radius * 3, this.radius * 3);
+        
+        // Draw planet body with gradient
+        const planetGradient = ctx.createRadialGradient(
+            screenX - this.radius * 0.3, screenY - this.radius * 0.3, 0,
+            screenX, screenY, this.radius
+        );
+        planetGradient.addColorStop(0, '#6699ff');
+        planetGradient.addColorStop(0.5, '#4488ff');
+        planetGradient.addColorStop(1, '#2266dd');
+        ctx.fillStyle = planetGradient;
         ctx.beginPath();
         ctx.arc(screenX, screenY, this.radius, 0, Math.PI * 2);
         ctx.fill();
         
         // Draw highlight
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         ctx.beginPath();
         ctx.arc(screenX - this.radius * 0.3, screenY - this.radius * 0.3, 
                 this.radius * 0.4, 0, Math.PI * 2);
         ctx.fill();
+        
+        // Draw subtle surface details
+        ctx.fillStyle = 'rgba(0, 0, 100, 0.1)';
+        ctx.beginPath();
+        ctx.arc(screenX + this.radius * 0.2, screenY + this.radius * 0.2, 
+                this.radius * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+// Particle System for Thrust Effects
+class Particle {
+    constructor(x, y, vx, vy, life, size, color, type = 'thrust') {
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.life = life;
+        this.maxLife = life;
+        this.size = size;
+        this.color = color;
+        this.alpha = 1;
+        this.type = type;
+    }
+
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        
+        if (this.type === 'thrust') {
+            this.vy += 0.1; // Gravity on particles
+            this.vx *= 0.98; // Air resistance
+        } else if (this.type === 'trail') {
+            this.vx *= 0.95; // Trail particles slow down faster
+            this.vy *= 0.95;
+        } else if (this.type === 'smoke') {
+            this.vy -= 0.05; // Smoke rises
+            this.vx *= 0.97;
+            this.size += 0.1; // Smoke expands
+        }
+        
+        this.life--;
+        this.alpha = this.life / this.maxLife;
+        return this.life > 0;
+    }
+
+    draw(ctx, cameraX, cameraY) {
+        const screenX = this.x - cameraX;
+        const screenY = this.y - cameraY;
+        
+        ctx.save();
+        ctx.globalAlpha = this.alpha;
+        const gradient = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, this.size);
+        gradient.addColorStop(0, this.color);
+        gradient.addColorStop(1, 'rgba(255, 100, 0, 0)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(screenX, screenY, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
     }
 }
 
@@ -164,14 +241,17 @@ class Planet {
 class Rocket {
     constructor(upgradeSystem) {
         this.upgradeSystem = upgradeSystem;
+        this.particles = [];
+        this.exhaustTrail = [];
         this.reset();
     }
 
     reset() {
         this.x = 100;
         this.y = 500;
-        this.vx = 10 + this.upgradeSystem.getBonus('ramp');
-        this.vy = -20 - this.upgradeSystem.getBonus('booster');
+        // Start with minimal velocity - realistic launch
+        this.vx = 2 + this.upgradeSystem.getBonus('ramp') * 0.3;
+        this.vy = -5 - this.upgradeSystem.getBonus('booster') * 0.5;
         this.angle = -Math.PI / 4;
         this.fuel = 100 + this.upgradeSystem.getBonus('fuel');
         this.maxFuel = 100 + this.upgradeSystem.getBonus('fuel');
@@ -179,12 +259,21 @@ class Rocket {
         this.maxHeight = 0;
         this.isFlying = true;
         this.gravityAssists = 0;
+        this.particles = [];
+        this.exhaustTrail = [];
+        this.launchTime = 0; // Track time since launch for realistic acceleration
+        this.rotation = 0; // For visual rotation effects
     }
 
     applyThrust(active) {
         if (!active || this.fuel <= 0) return;
         
-        const thrustPower = 0.5 + this.upgradeSystem.getBonus('thrust') * 0.01;
+        // Realistic rocket physics: thrust increases as fuel burns (rocket gets lighter)
+        const fuelRatio = this.fuel / this.maxFuel;
+        const massRatio = 0.3 + 0.7 * fuelRatio; // Rocket mass decreases as fuel depletes
+        const baseThrustPower = 0.6 + this.upgradeSystem.getBonus('thrust') * 0.015;
+        const thrustPower = baseThrustPower / massRatio; // More thrust with less mass
+        
         const fuelEfficiency = 1 - (this.upgradeSystem.getBonus('efficiency') * 0.01);
         
         this.vx += Math.cos(this.angle) * thrustPower;
@@ -192,16 +281,88 @@ class Rocket {
         this.fuel -= 0.5 * fuelEfficiency;
         
         if (this.fuel < 0) this.fuel = 0;
+        
+        // Create thrust particles
+        this.createThrustParticles();
+    }
+    
+    createThrustParticles() {
+        // Create particles at the back of the rocket
+        const exhaustX = this.x - Math.cos(this.angle) * 20;
+        const exhaustY = this.y - Math.sin(this.angle) * 20;
+        
+        // Multiple particles per frame for dense effect
+        for (let i = 0; i < 3; i++) {
+            const spread = 0.3;
+            const vx = -Math.cos(this.angle) * (2 + Math.random() * 2) + (Math.random() - 0.5) * spread;
+            const vy = -Math.sin(this.angle) * (2 + Math.random() * 2) + (Math.random() - 0.5) * spread;
+            
+            // Color varies: orange to yellow to white
+            const colors = ['rgba(255, 150, 0, 1)', 'rgba(255, 200, 50, 1)', 'rgba(255, 255, 200, 1)'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            const particle = new Particle(
+                exhaustX + (Math.random() - 0.5) * 5,
+                exhaustY + (Math.random() - 0.5) * 5,
+                vx + this.vx * 0.5,
+                vy + this.vy * 0.5,
+                20 + Math.random() * 15,
+                3 + Math.random() * 4,
+                color,
+                'thrust'
+            );
+            this.particles.push(particle);
+        }
+        
+        // Add occasional trail particles for exhaust trail
+        if (Math.random() < 0.3) {
+            const trailParticle = new Particle(
+                this.x,
+                this.y,
+                this.vx * 0.2 + (Math.random() - 0.5) * 0.5,
+                this.vy * 0.2 + (Math.random() - 0.5) * 0.5,
+                40 + Math.random() * 20,
+                2 + Math.random() * 2,
+                'rgba(200, 200, 200, 0.6)',
+                'trail'
+            );
+            this.particles.push(trailParticle);
+        }
+        
+        // Limit particle count for performance
+        if (this.particles.length > 300) {
+            this.particles.splice(0, 50);
+        }
+    }
+    
+    createLandingSmoke() {
+        // Create smoke particles when landing
+        for (let i = 0; i < 10; i++) {
+            const smokeParticle = new Particle(
+                this.x + (Math.random() - 0.5) * 20,
+                this.y,
+                (Math.random() - 0.5) * 2,
+                -Math.random() * 0.5,
+                30 + Math.random() * 20,
+                5 + Math.random() * 5,
+                'rgba(100, 100, 100, 0.5)',
+                'smoke'
+            );
+            this.particles.push(smokeParticle);
+        }
     }
 
     update(planets) {
         if (!this.isFlying) return;
+        
+        this.launchTime++;
 
-        // Gravity
-        const gravity = 0.2;
-        this.vy += gravity;
+        // Realistic gravity that decreases with altitude
+        const altitude = 600 - this.y;
+        const gravityStrength = 0.2 * Math.max(0.1, 1 - altitude / 2000); // Gravity decreases with height
+        this.vy += gravityStrength;
 
-        // Drag
+        // Enhanced drag calculations
         const dragCoef = 0.001 * (1 - this.upgradeSystem.getBonus('nosecone') * 0.01);
         const liftCoef = 0.002 * (1 + this.upgradeSystem.getBonus('wings') * 0.01);
         
@@ -212,8 +373,8 @@ class Rocket {
         this.vx += dragX;
         this.vy += dragY;
         
-        // Lift (when moving horizontally)
-        if (this.vx > 0) {
+        // Enhanced lift (when moving horizontally)
+        if (this.vx > 0 && this.vy > -2) {
             this.vy -= liftCoef * this.vx;
         }
 
@@ -246,9 +407,15 @@ class Rocket {
         this.x += this.vx;
         this.y += this.vy;
 
-        // Update angle based on velocity
+        // Update angle based on velocity with smooth interpolation
         if (speed > 1) {
-            this.angle = Math.atan2(this.vy, this.vx);
+            const targetAngle = Math.atan2(this.vy, this.vx);
+            // Smooth angle transition
+            let angleDiff = targetAngle - this.angle;
+            // Normalize angle difference
+            while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+            while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+            this.angle += angleDiff * 0.1;
         }
 
         // Track stats
@@ -258,6 +425,9 @@ class Rocket {
         // Check if landed
         if (this.y >= 580) {
             this.y = 580;
+            if (this.isFlying) {
+                this.createLandingSmoke();
+            }
             this.isFlying = false;
         }
 
@@ -265,55 +435,184 @@ class Rocket {
         if (this.x < 0) {
             this.isFlying = false;
         }
+        
+        // Update particles
+        this.particles = this.particles.filter(p => p.update());
     }
 
-    draw(ctx, cameraX, cameraY) {
+    draw(ctx, cameraX, cameraY, thrustActive) {
         const screenX = this.x - cameraX;
         const screenY = this.y - cameraY;
+        
+        // Draw particles first (behind rocket)
+        this.particles.forEach(p => p.draw(ctx, cameraX, cameraY));
         
         ctx.save();
         ctx.translate(screenX, screenY);
         ctx.rotate(this.angle);
 
-        // Draw flame if thrusting
-        if (this.fuel > 0) {
-            ctx.fillStyle = 'orange';
+        // Get upgrade levels for visual modifications
+        const thrustLevel = this.upgradeSystem.gameState.upgrades.thrust;
+        const wingLevel = this.upgradeSystem.gameState.upgrades.wings;
+        const noseconeLevel = this.upgradeSystem.gameState.upgrades.nosecone;
+        const boosterLevel = this.upgradeSystem.gameState.upgrades.booster;
+        
+        // Enhanced flame if thrusting
+        if (thrustActive && this.fuel > 0) {
+            const flameLength = 20 + thrustLevel * 3;
+            const flameWidth = 8 + thrustLevel * 1.5;
+            
+            // Animated flame
+            const flicker = Math.sin(Date.now() * 0.02) * 2 + Math.random() * 3;
+            
+            // Outer flame (orange)
+            ctx.fillStyle = 'rgba(255, 100, 0, 0.8)';
             ctx.beginPath();
             ctx.moveTo(-15, 0);
-            ctx.lineTo(-25, -5);
-            ctx.lineTo(-25, 5);
+            ctx.lineTo(-flameLength - flicker, -flameWidth);
+            ctx.lineTo(-flameLength - flicker - 5, 0);
+            ctx.lineTo(-flameLength - flicker, flameWidth);
             ctx.closePath();
             ctx.fill();
+            
+            // Inner flame (yellow)
+            ctx.fillStyle = 'rgba(255, 200, 50, 0.9)';
+            ctx.beginPath();
+            ctx.moveTo(-15, 0);
+            ctx.lineTo(-flameLength * 0.6 - flicker * 0.5, -flameWidth * 0.6);
+            ctx.lineTo(-flameLength * 0.7 - flicker * 0.5, 0);
+            ctx.lineTo(-flameLength * 0.6 - flicker * 0.5, flameWidth * 0.6);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Core flame (white hot)
+            ctx.fillStyle = 'rgba(255, 255, 200, 1)';
+            ctx.beginPath();
+            ctx.moveTo(-15, 0);
+            ctx.lineTo(-flameLength * 0.3, -flameWidth * 0.3);
+            ctx.lineTo(-flameLength * 0.4, 0);
+            ctx.lineTo(-flameLength * 0.3, flameWidth * 0.3);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Engine glow
+            const glowSize = 15 + thrustLevel * 2;
+            const gradient = ctx.createRadialGradient(-15, 0, 0, -15, 0, glowSize);
+            gradient.addColorStop(0, 'rgba(255, 150, 0, 0.6)');
+            gradient.addColorStop(1, 'rgba(255, 100, 0, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(-15 - glowSize, -glowSize, glowSize * 2, glowSize * 2);
         }
 
-        // Draw rocket body
-        ctx.fillStyle = '#e0e0e0';
-        ctx.fillRect(-15, -5, 30, 10);
+        // Booster attachments (if upgraded)
+        if (boosterLevel > 0) {
+            ctx.fillStyle = '#888';
+            const boosterSize = 2 + boosterLevel * 0.5;
+            // Top booster
+            ctx.fillRect(-12, -8 - boosterSize, 8, boosterSize * 2);
+            // Bottom booster
+            ctx.fillRect(-12, 8 - boosterSize, 8, boosterSize * 2);
+        }
+
+        // Enhanced engine based on thrust upgrades
+        const engineSize = 15 + thrustLevel * 2;
+        ctx.fillStyle = '#555';
+        ctx.fillRect(-engineSize, -6, engineSize, 12);
         
-        // Draw nose cone
+        // Engine nozzle details
+        ctx.fillStyle = '#333';
+        ctx.fillRect(-engineSize, -4, engineSize - 2, 8);
+
+        // Draw rocket body - gets slightly larger with upgrades
+        const bodyLength = 30 + Math.min(thrustLevel + wingLevel, 10);
+        const bodyHeight = 10;
+        
+        // Body gradient for depth
+        const bodyGradient = ctx.createLinearGradient(0, -bodyHeight/2, 0, bodyHeight/2);
+        bodyGradient.addColorStop(0, '#f0f0f0');
+        bodyGradient.addColorStop(0.5, '#e0e0e0');
+        bodyGradient.addColorStop(1, '#c0c0c0');
+        ctx.fillStyle = bodyGradient;
+        ctx.fillRect(-15, -bodyHeight/2, bodyLength, bodyHeight);
+        
+        // Body details/stripes
+        ctx.fillStyle = '#64b5f6';
+        ctx.fillRect(0, -bodyHeight/2, 3, bodyHeight);
+        
+        // Draw nose cone - changes shape with upgrades
+        const noseLength = 15 + noseconeLevel * 2;
+        const noseWidth = noseconeLevel > 3 ? 4 : 5; // More streamlined
+        
         ctx.fillStyle = '#ff4444';
         ctx.beginPath();
-        ctx.moveTo(15, 0);
-        ctx.lineTo(25, -5);
-        ctx.lineTo(25, 5);
+        ctx.moveTo(bodyLength - 15, 0);
+        ctx.lineTo(bodyLength - 15 + noseLength, -noseWidth);
+        ctx.lineTo(bodyLength - 15 + noseLength + 3, 0);
+        ctx.lineTo(bodyLength - 15 + noseLength, noseWidth);
         ctx.closePath();
         ctx.fill();
         
-        // Draw fins
-        ctx.fillStyle = '#4444ff';
+        // Nose cone highlight
+        ctx.fillStyle = 'rgba(255, 150, 150, 0.5)';
         ctx.beginPath();
-        ctx.moveTo(-10, 5);
-        ctx.lineTo(-10, 12);
-        ctx.lineTo(-5, 5);
+        ctx.moveTo(bodyLength - 15, 0);
+        ctx.lineTo(bodyLength - 15 + noseLength * 0.7, -noseWidth * 0.7);
+        ctx.lineTo(bodyLength - 15 + noseLength * 0.8, 0);
         ctx.closePath();
         ctx.fill();
         
+        // Draw fins/wings - larger with wing upgrades
+        const finSize = 7 + wingLevel * 1.5;
+        const finLength = 10 + wingLevel * 2;
+        
+        // Wing gradient
+        const wingGradient = ctx.createLinearGradient(0, 0, -finLength, finSize);
+        wingGradient.addColorStop(0, '#6666ff');
+        wingGradient.addColorStop(1, '#4444cc');
+        
+        ctx.fillStyle = wingGradient;
+        
+        // Top fin
         ctx.beginPath();
-        ctx.moveTo(-10, -5);
-        ctx.lineTo(-10, -12);
-        ctx.lineTo(-5, -5);
+        ctx.moveTo(-10, -bodyHeight/2);
+        ctx.lineTo(-10, -bodyHeight/2 - finSize);
+        ctx.lineTo(-10 - finLength, -bodyHeight/2 - finSize * 0.3);
+        ctx.lineTo(-5, -bodyHeight/2);
         ctx.closePath();
         ctx.fill();
+        
+        // Bottom fin
+        ctx.beginPath();
+        ctx.moveTo(-10, bodyHeight/2);
+        ctx.lineTo(-10, bodyHeight/2 + finSize);
+        ctx.lineTo(-10 - finLength, bodyHeight/2 + finSize * 0.3);
+        ctx.lineTo(-5, bodyHeight/2);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Fin outlines for definition
+        ctx.strokeStyle = '#3333aa';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-10, -bodyHeight/2);
+        ctx.lineTo(-10, -bodyHeight/2 - finSize);
+        ctx.lineTo(-10 - finLength, -bodyHeight/2 - finSize * 0.3);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(-10, bodyHeight/2);
+        ctx.lineTo(-10, bodyHeight/2 + finSize);
+        ctx.lineTo(-10 - finLength, bodyHeight/2 + finSize * 0.3);
+        ctx.stroke();
+        
+        // Window/cockpit
+        ctx.fillStyle = 'rgba(100, 200, 255, 0.7)';
+        ctx.beginPath();
+        ctx.arc(5, 0, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#666';
+        ctx.lineWidth = 1;
+        ctx.stroke();
 
         ctx.restore();
     }
@@ -332,6 +631,7 @@ class Game {
         this.cameraY = 0;
         this.isPlaying = false;
         this.thrustActive = false;
+        this.achievementsShown = new Set();
         
         this.setupEventListeners();
         this.generatePlanets();
@@ -410,6 +710,7 @@ class Game {
         this.thrustActive = false;
         this.cameraX = 0;
         this.cameraY = 0;
+        this.achievementsShown.clear(); // Reset achievements for this flight
         
         document.getElementById('flight-stats').classList.remove('hidden');
         document.getElementById('launch-btn').disabled = true;
@@ -499,10 +800,63 @@ class Game {
     }
 
     updateFlightStats() {
-        document.getElementById('current-distance').textContent = Math.floor(this.rocket.distance);
-        document.getElementById('current-height').textContent = Math.floor(this.rocket.maxHeight);
-        document.getElementById('current-speed').textContent = Math.floor(Math.sqrt(this.rocket.vx * this.rocket.vx + this.rocket.vy * this.rocket.vy));
-        document.getElementById('current-fuel').textContent = Math.floor(this.rocket.fuel);
+        const distance = Math.floor(this.rocket.distance);
+        const height = Math.floor(this.rocket.maxHeight);
+        const speed = Math.floor(Math.sqrt(this.rocket.vx * this.rocket.vx + this.rocket.vy * this.rocket.vy));
+        
+        document.getElementById('current-distance').textContent = distance;
+        document.getElementById('current-height').textContent = height;
+        document.getElementById('current-speed').textContent = speed;
+        
+        // Update speed bar (max speed for display: 50 m/s)
+        const speedPercent = Math.min((speed / 50) * 100, 100);
+        document.getElementById('speed-bar').style.width = speedPercent + '%';
+        
+        const fuelPercent = Math.floor((this.rocket.fuel / this.rocket.maxFuel) * 100);
+        document.getElementById('current-fuel').textContent = fuelPercent + '%';
+        
+        // Update fuel bar
+        const fuelBar = document.getElementById('fuel-bar');
+        fuelBar.style.width = fuelPercent + '%';
+        
+        // Add warning class when fuel is low
+        if (fuelPercent < 20) {
+            fuelBar.classList.add('low');
+        } else {
+            fuelBar.classList.remove('low');
+        }
+        
+        // Check for achievements
+        this.checkAchievements(distance, height, speed);
+    }
+    
+    checkAchievements(distance, height, speed) {
+        const achievements = [
+            { id: 'speed_25', condition: speed >= 25, message: '🚀 Speed Demon! 25 m/s!' },
+            { id: 'speed_40', condition: speed >= 40, message: '⚡ Supersonic! 40 m/s!' },
+            { id: 'height_200', condition: height >= 200, message: '⬆️ High Flyer! 200m altitude!' },
+            { id: 'height_500', condition: height >= 500, message: '🌟 Sky High! 500m altitude!' },
+            { id: 'distance_500', condition: distance >= 500, message: '📏 Long Journey! 500m traveled!' },
+            { id: 'distance_1000', condition: distance >= 1000, message: '🏆 Epic Voyage! 1000m traveled!' }
+        ];
+        
+        achievements.forEach(achievement => {
+            if (achievement.condition && !this.achievementsShown.has(achievement.id)) {
+                this.showAchievement(achievement.message);
+                this.achievementsShown.add(achievement.id);
+            }
+        });
+    }
+    
+    showAchievement(message) {
+        const notification = document.getElementById('achievement-notification');
+        notification.textContent = message;
+        notification.classList.remove('hidden');
+        
+        // Hide after animation completes
+        setTimeout(() => {
+            notification.classList.add('hidden');
+        }, 2000);
     }
 
     resetGame() {
@@ -519,34 +873,142 @@ class Game {
     render() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // Draw background gradient
+        // Calculate altitude factor for background changes
+        const altitude = this.isPlaying ? (600 - this.rocket.y) : 0;
+        const spaceBlend = Math.min(altitude / 1000, 1); // Transition to space at 1000m
+        
+        // Draw enhanced background gradient that changes with altitude
         const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-        gradient.addColorStop(0, '#000814');
-        gradient.addColorStop(0.5, '#1a1a3e');
-        gradient.addColorStop(1, '#264653');
+        
+        // Interpolate colors based on altitude
+        const color1 = this.interpolateColor('#000814', '#000000', spaceBlend);
+        const color2 = this.interpolateColor('#1a1a3e', '#0a0a1a', spaceBlend);
+        const color3 = this.interpolateColor('#264653', '#1a2030', spaceBlend);
+        const color4 = this.interpolateColor('#2a4a5a', '#202040', spaceBlend);
+        
+        gradient.addColorStop(0, color1);
+        gradient.addColorStop(0.3, color2);
+        gradient.addColorStop(0.7, color3);
+        gradient.addColorStop(1, color4);
         this.ctx.fillStyle = gradient;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // Draw stars
-        this.ctx.fillStyle = 'white';
-        for (let i = 0; i < 100; i++) {
-            const x = (i * 237 + this.cameraX * 0.1) % this.canvas.width;
-            const y = (i * 139 + this.cameraY * 0.1) % this.canvas.height;
-            this.ctx.fillRect(x, y, 2, 2);
+        // Draw multiple layers of stars with parallax (more stars in space)
+        const starDensityMultiplier = 1 + spaceBlend * 2;
+        
+        // Distant stars (slow parallax)
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        for (let i = 0; i < 100 * starDensityMultiplier; i++) {
+            const x = (i * 237 + this.cameraX * 0.05) % this.canvas.width;
+            const y = (i * 139 + this.cameraY * 0.05) % this.canvas.height;
+            this.ctx.fillRect(x, y, 1, 1);
         }
         
-        // Draw ground
-        const groundY = 580 - this.cameraY;
-        this.ctx.fillStyle = '#2d5016';
-        this.ctx.fillRect(0, groundY, this.canvas.width, this.canvas.height - groundY);
+        // Medium stars
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        for (let i = 0; i < 60 * starDensityMultiplier; i++) {
+            const x = (i * 331 + this.cameraX * 0.15) % this.canvas.width;
+            const y = (i * 197 + this.cameraY * 0.15) % this.canvas.height;
+            const twinkle = Math.sin(Date.now() * 0.001 + i) * 0.5 + 0.5;
+            this.ctx.globalAlpha = 0.6 * twinkle;
+            this.ctx.fillRect(x, y, 2, 2);
+        }
+        this.ctx.globalAlpha = 1;
         
-        // Draw launch pad
+        // Close stars (fast parallax)
+        this.ctx.fillStyle = 'white';
+        for (let i = 0; i < 40 * starDensityMultiplier; i++) {
+            const x = (i * 419 + this.cameraX * 0.3) % this.canvas.width;
+            const y = (i * 283 + this.cameraY * 0.3) % this.canvas.height;
+            const size = 1 + (i % 3);
+            this.ctx.fillRect(x, y, size, size);
+        }
+        
+        // Draw ground with texture (fades at high altitude)
+        const groundY = 580 - this.cameraY;
+        
+        if (groundY < this.canvas.height + 100) {
+            const groundAlpha = Math.max(0, 1 - spaceBlend * 0.5);
+            this.ctx.globalAlpha = groundAlpha;
+            
+            // Ground gradient
+            const groundGradient = this.ctx.createLinearGradient(0, groundY, 0, this.canvas.height);
+            groundGradient.addColorStop(0, '#3d6b2e');
+            groundGradient.addColorStop(0.3, '#2d5016');
+            groundGradient.addColorStop(1, '#1a3010');
+            this.ctx.fillStyle = groundGradient;
+            this.ctx.fillRect(0, groundY, this.canvas.width, this.canvas.height - groundY);
+            
+            // Ground texture/details
+            this.ctx.fillStyle = 'rgba(50, 80, 30, 0.5)';
+            for (let i = 0; i < 50; i++) {
+                const x = (i * 157 - this.cameraX * 0.5) % this.canvas.width;
+                if (x < 0) continue;
+                this.ctx.fillRect(x, groundY + 5 + (i % 10), 3 + (i % 3), 2);
+            }
+            
+            this.ctx.globalAlpha = 1;
+        }
+        
+        // Draw enhanced launch pad (only if visible)
         const padX = 100 - this.cameraX;
-        if (padX > -50 && padX < this.canvas.width + 50) {
-            this.ctx.fillStyle = '#666';
+        if (padX > -100 && padX < this.canvas.width + 100 && groundY < this.canvas.height + 100) {
+            const padAlpha = Math.max(0, 1 - spaceBlend * 0.5);
+            this.ctx.globalAlpha = padAlpha;
+            
+            // Platform shadow
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            this.ctx.fillRect(padX - 45, groundY - 18, 90, 20);
+            
+            // Platform
+            const platformGradient = this.ctx.createLinearGradient(padX - 40, groundY - 20, padX - 40, groundY);
+            platformGradient.addColorStop(0, '#888');
+            platformGradient.addColorStop(1, '#555');
+            this.ctx.fillStyle = platformGradient;
             this.ctx.fillRect(padX - 40, groundY - 20, 80, 20);
-            this.ctx.fillStyle = '#888';
-            this.ctx.fillRect(padX - 5, groundY - 60, 10, 60);
+            
+            // Platform details/grid
+            this.ctx.strokeStyle = '#444';
+            this.ctx.lineWidth = 1;
+            for (let i = 0; i < 8; i++) {
+                const x = padX - 40 + i * 10;
+                this.ctx.beginPath();
+                this.ctx.moveTo(x, groundY - 20);
+                this.ctx.lineTo(x, groundY);
+                this.ctx.stroke();
+            }
+            
+            // Support structure
+            this.ctx.fillStyle = '#777';
+            this.ctx.fillRect(padX - 8, groundY - 70, 16, 50);
+            
+            // Support details
+            this.ctx.fillStyle = '#999';
+            this.ctx.fillRect(padX - 6, groundY - 70, 12, 50);
+            
+            // Cross beams
+            this.ctx.strokeStyle = '#666';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(padX - 8, groundY - 50);
+            this.ctx.lineTo(padX + 8, groundY - 40);
+            this.ctx.stroke();
+            this.ctx.beginPath();
+            this.ctx.moveTo(padX + 8, groundY - 50);
+            this.ctx.lineTo(padX - 8, groundY - 40);
+            this.ctx.stroke();
+            
+            // Lights on launch pad
+            const lightColor = this.isPlaying ? 'rgba(255, 50, 50, 0.8)' : 'rgba(50, 255, 50, 0.8)';
+            this.ctx.fillStyle = lightColor;
+            this.ctx.beginPath();
+            this.ctx.arc(padX - 30, groundY - 15, 3, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.beginPath();
+            this.ctx.arc(padX + 30, groundY - 15, 3, 0, Math.PI * 2);
+            this.ctx.fill();
+            
+            this.ctx.globalAlpha = 1;
         }
         
         // Draw planets
@@ -555,9 +1017,29 @@ class Game {
         });
         
         // Draw rocket
-        this.rocket.draw(this.ctx, this.cameraX, this.cameraY);
+        this.rocket.draw(this.ctx, this.cameraX, this.cameraY, this.thrustActive);
         
         requestAnimationFrame(() => this.render());
+    }
+    
+    interpolateColor(color1, color2, factor) {
+        // Simple hex color interpolation
+        const c1 = parseInt(color1.slice(1), 16);
+        const c2 = parseInt(color2.slice(1), 16);
+        
+        const r1 = (c1 >> 16) & 0xff;
+        const g1 = (c1 >> 8) & 0xff;
+        const b1 = c1 & 0xff;
+        
+        const r2 = (c2 >> 16) & 0xff;
+        const g2 = (c2 >> 8) & 0xff;
+        const b2 = c2 & 0xff;
+        
+        const r = Math.round(r1 + (r2 - r1) * factor);
+        const g = Math.round(g1 + (g2 - g1) * factor);
+        const b = Math.round(b1 + (b2 - b1) * factor);
+        
+        return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
     }
 }
 

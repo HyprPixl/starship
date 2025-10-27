@@ -31,12 +31,35 @@
                 <canvas id="game-canvas" width="800" height="600"></canvas>
                 <div id="game-info">
                     <div id="flight-stats" class="hidden">
-                        <div>Distance: <span id="current-distance">0</span>m</div>
-                        <div>Height: <span id="current-height">0</span>m</div>
-                        <div>Speed: <span id="current-speed">0</span>m/s</div>
-                        <div>Fuel: <span id="current-fuel">100</span>%</div>
+                        <div class="stat-row">
+                            <span class="stat-icon">📏</span>
+                            <span class="stat-label">Distance:</span> 
+                            <span id="current-distance" class="stat-value">0</span>m
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-icon">⬆️</span>
+                            <span class="stat-label">Height:</span> 
+                            <span id="current-height" class="stat-value">0</span>m
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-icon">⚡</span>
+                            <span class="stat-label">Speed:</span> 
+                            <span id="current-speed" class="stat-value">0</span>m/s
+                            <div class="speed-indicator">
+                                <div id="speed-bar" class="speed-bar"></div>
+                            </div>
+                        </div>
+                        <div class="stat-row fuel-stat">
+                            <span class="stat-icon">⛽</span>
+                            <span class="stat-label">Fuel:</span>
+                            <div class="fuel-bar-container">
+                                <div id="fuel-bar" class="fuel-bar"></div>
+                                <span id="current-fuel" class="fuel-text">100%</span>
+                            </div>
+                        </div>
                     </div>
                     <div id="game-messages"></div>
+                    <div id="achievement-notification" class="achievement-notification hidden"></div>
                 </div>
             </div>
 
@@ -58,6 +81,7 @@
                                 <strong>Fuel Capacity</strong>
                                 <p>Increase fuel capacity</p>
                                 <p>Level: <span id="fuel-level">0</span></p>
+                                <p class="upgrade-effect">+20% fuel per level</p>
                             </div>
                             <button class="buy-btn" data-upgrade="fuel">
                                 Buy: $<span id="fuel-cost">100</span>
@@ -68,6 +92,7 @@
                                 <strong>Thrust Power</strong>
                                 <p>Increase engine thrust</p>
                                 <p>Level: <span id="thrust-level">0</span></p>
+                                <p class="upgrade-effect">+15% thrust, larger engine visual</p>
                             </div>
                             <button class="buy-btn" data-upgrade="thrust">
                                 Buy: $<span id="thrust-cost">150</span>
@@ -78,6 +103,7 @@
                                 <strong>Fuel Efficiency</strong>
                                 <p>Burn fuel more slowly</p>
                                 <p>Level: <span id="efficiency-level">0</span></p>
+                                <p class="upgrade-effect">-10% fuel burn per level</p>
                             </div>
                             <button class="buy-btn" data-upgrade="efficiency">
                                 Buy: $<span id="efficiency-cost">200</span>
@@ -92,6 +118,7 @@
                                 <strong>Wing Design</strong>
                                 <p>Improve glide efficiency</p>
                                 <p>Level: <span id="wings-level">0</span></p>
+                                <p class="upgrade-effect">+8% glide, larger wing visuals</p>
                             </div>
                             <button class="buy-btn" data-upgrade="wings">
                                 Buy: $<span id="wings-cost">175</span>
@@ -102,6 +129,7 @@
                                 <strong>Nose Cone</strong>
                                 <p>Reduce air resistance</p>
                                 <p>Level: <span id="nosecone-level">0</span></p>
+                                <p class="upgrade-effect">-5% drag, streamlined nose</p>
                             </div>
                             <button class="buy-btn" data-upgrade="nosecone">
                                 Buy: $<span id="nosecone-cost">250</span>
@@ -116,6 +144,7 @@
                                 <strong>Gravity Detector</strong>
                                 <p>Better detect gravity wells</p>
                                 <p>Level: <span id="detector-level">0</span></p>
+                                <p class="upgrade-effect">+30 units detection range</p>
                             </div>
                             <button class="buy-btn" data-upgrade="detector">
                                 Buy: $<span id="detector-cost">500</span>
@@ -126,6 +155,7 @@
                                 <strong>Boost Reserves</strong>
                                 <p>Extra fuel for gravity assists</p>
                                 <p>Level: <span id="boost-level">0</span></p>
+                                <p class="upgrade-effect">+15% boost power</p>
                             </div>
                             <button class="buy-btn" data-upgrade="boost">
                                 Buy: $<span id="boost-cost">600</span>
@@ -136,6 +166,7 @@
                                 <strong>Lucky Charm</strong>
                                 <p>Earn more money from flights</p>
                                 <p>Level: <span id="luck-level">0</span></p>
+                                <p class="upgrade-effect">+10% money per level</p>
                             </div>
                             <button class="buy-btn" data-upgrade="luck">
                                 Buy: $<span id="luck-cost">400</span>
@@ -150,6 +181,7 @@
                                 <strong>Launch Ramp</strong>
                                 <p>Increase initial speed</p>
                                 <p>Level: <span id="ramp-level">0</span></p>
+                                <p class="upgrade-effect">+1.5 m/s initial speed per level</p>
                             </div>
                             <button class="buy-btn" data-upgrade="ramp">
                                 Buy: $<span id="ramp-cost">300</span>
@@ -160,6 +192,7 @@
                                 <strong>Booster Rockets</strong>
                                 <p>Initial speed burst</p>
                                 <p>Level: <span id="booster-level">0</span></p>
+                                <p class="upgrade-effect">+5 m/s burst per level, visible boosters</p>
                             </div>
                             <button class="buy-btn" data-upgrade="booster">
                                 Buy: $<span id="booster-cost">350</span>
@@ -176,9 +209,18 @@
                     <li><strong>Fly:</strong> Hold SPACE or CLICK to fire thrusters (uses fuel)</li>
                     <li><strong>Gravity Assist:</strong> Fly near planets (glowing orbs) to get speed boosts!</li>
                     <li><strong>Earn Money:</strong> Travel farther to earn more money</li>
-                    <li><strong>Upgrade:</strong> Use money to improve your rocket</li>
+                    <li><strong>Upgrade:</strong> Use money to improve your rocket - watch it transform!</li>
                     <li><strong>Goal:</strong> Reach space and escape Earth's gravity!</li>
                 </ul>
+                <div class="tips-section">
+                    <h4>💡 Pro Tips:</h4>
+                    <ul class="tips-list">
+                        <li>Your rocket gets faster as fuel burns (lighter = faster acceleration)</li>
+                        <li>Gravity decreases at higher altitudes, making it easier to escape</li>
+                        <li>Watch for achievements during flight!</li>
+                        <li>Visual upgrades: Engines grow, wings expand, nose becomes sleek</li>
+                    </ul>
+                </div>
             </div>
         </main>
     </div>
